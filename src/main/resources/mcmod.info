@@ -1,0 +1,16 @@
+[
+{
+  "modid": "planetoid",
+  "name": "Planetoid",
+  "description": "Awesome little Planetoid worlds. Infinitely generated on-the-fly.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "http://tennoxmods.blogspot.de/p/planetoid.html",
+  "updateUrl": "",
+  "authors": ["TeNNoX"],
+  "credits": "TeNNoX - coding and stuff, Seibei - original idea",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
