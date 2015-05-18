@@ -6,8 +6,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.WorldChunkManager;
 import net.minecraft.world.chunk.IChunkProvider;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class PlanetoidWorld extends WorldType {
 	public PlanetoidWorld(String name) {
@@ -33,6 +33,6 @@ public class PlanetoidWorld extends WorldType {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void onCustomizeButton(Minecraft mc, GuiCreateWorld guiCreateWorld) {
-		mc.displayGuiScreen(new GuiCreatePlanetoidWorld(guiCreateWorld, guiCreateWorld.field_146334_a)); // GuiCreateFlatWorld
+		mc.displayGuiScreen(new GuiCreatePlanetoidWorld(guiCreateWorld, guiCreateWorld.chunkProviderSettingsJson)); // GuiCreateFlatWorld
 	}
 }

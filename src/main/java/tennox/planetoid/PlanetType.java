@@ -1,41 +1,42 @@
 package tennox.planetoid;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.WeightedRandom;
 
 class PlanetType extends WeightedRandom.Item {
-	Block in;
-	Block out;
+	IBlockState in;
+	IBlockState out;
 	int total;
-	Block bottom = null, top = null;
+	IBlockState bottom = null, top = null;
 	String name;
 
-	public PlanetType(Block b, int i, String n) {
-		this(b, b, i, n);
+	public PlanetType(IBlockState state, int i, String n) {
+		this(state, state, i, n);
 	}
 
-	PlanetType(Block o, Block i, int w, String n) {
-		super(w);
-		this.out = o;
-		this.in = i;
-		this.name = n;
+	PlanetType(IBlockState out, IBlockState in, int weight, String name) {
+		super(weight);
+		this.out = out;
+		this.in = in;
+		this.name = name;
 	}
 
-	public Block getTopBlock() {
+	public IBlockState getTop() {
 		return top != null ? top : out;
 	}
 
-	public Block getBottomBlock() {
+	public IBlockState getBottom() {
 		return bottom != null ? bottom : out;
 	}
 
-	public PlanetType setTopBlock(Block i) {
-		top = i;
+	public PlanetType setTopBlockState(IBlockState state) {
+		top = state;
 		return this;
 	}
 
-	public PlanetType setBottomBlock(Block i) {
-		bottom = i;
+	public PlanetType setBottomBlockState(IBlockState state) {
+		bottom = state;
 		return this;
 	}
 }

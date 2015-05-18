@@ -7,7 +7,7 @@ import net.minecraft.world.biome.WorldChunkManager;
 public class PlanetoidChunkManager extends WorldChunkManager {
 
 	public PlanetoidChunkManager(World world, WorldType type) {
-		super(world.getSeed(), type);
+		super(world.getSeed(), type, null); // TODO: should this be "", or should this string have content??
 	}
 
 }

@@ -2,11 +2,10 @@ package tennox.planetoid;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiCreateWorld;
-import net.minecraft.client.gui.GuiOptionSlider;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class GuiCreatePlanetoidWorld extends GuiScreen {
@@ -34,11 +33,12 @@ public class GuiCreatePlanetoidWorld extends GuiScreen {
 		this.buttonList.add(new PlanetoidSlider(5, this, this.width / 2 + 5, 74, Option.SPAWNTRIES));
 	}
 
+	// ref. GuiCreateFlatWorld.actionPerformed
 	protected void actionPerformed(GuiButton button) {
 		if (button.id == 1) {
 			this.mc.displayGuiScreen(this.createWorldGui);
 		} else if (button.id == 0) {
-			this.createWorldGui.field_146334_a = generatorInfo.toString();
+			this.createWorldGui.chunkProviderSettingsJson = generatorInfo.toString();
 			this.mc.displayGuiScreen(this.createWorldGui);
 		} else if (button.id == 2) {
 			generatorInfo.defaultGeneration = !generatorInfo.defaultGeneration;

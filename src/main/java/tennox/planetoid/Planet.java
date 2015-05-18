@@ -4,30 +4,32 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Random;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.WeightedRandom;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkPrimer;
 
 public class Planet {
-	static PlanetType DIRT = new PlanetType(Blocks.dirt, 20, "Dirt").setTopBlock(Blocks.grass);
-	static PlanetType WOOD = new PlanetType(Blocks.leaves, Blocks.log, 10, "Wood");
-	static PlanetType WATER = new PlanetType(Blocks.glass, Blocks.water, 5, "Water");
-	static PlanetType SAND = new PlanetType(Blocks.sand, 10, "Sand").setBottomBlock(Blocks.sandstone);
-	static PlanetType GLOWSTONE = new PlanetType(Blocks.glowstone, 3, "Glowstone");
-	static PlanetType STONE = new PlanetType(Blocks.stone, 20, "Stone");
+	static PlanetType DIRT = new PlanetType(Blocks.dirt.getDefaultState(), 20, "Dirt").setTopBlockState(Blocks.grass.getDefaultState());
+	static PlanetType WOOD = new PlanetType(Blocks.leaves.getDefaultState(), Blocks.log.getDefaultState(), 10, "Wood");
+	static PlanetType WATER = new PlanetType(Blocks.glass.getDefaultState(), Blocks.water.getDefaultState(), 5, "Water");
+	static PlanetType SAND = new PlanetType(Blocks.sand.getDefaultState(), 10, "Sand").setBottomBlockState(Blocks.sandstone.getDefaultState());
+	static PlanetType GLOWSTONE = new PlanetType(Blocks.glowstone.getDefaultState(), 3, "Glowstone");
+	static PlanetType STONE = new PlanetType(Blocks.stone.getDefaultState(), 20, "Stone");
 
-	static PlanetType GRAVEL = new PlanetType(Blocks.stone, Blocks.gravel, 40, "Gravel");
-	static PlanetType COBBLESTONE = new PlanetType(Blocks.stone, Blocks.cobblestone, 60, "Cobblestone");
-	static PlanetType LAVA = new PlanetType(Blocks.stone, Blocks.lava, 60, "Lava");
-	static PlanetType COAL = new PlanetType(Blocks.stone, Blocks.coal_ore, 60, "Coal");
-	static PlanetType IRON = new PlanetType(Blocks.stone, Blocks.iron_ore, 60, "Iron");
-	static PlanetType GOLD = new PlanetType(Blocks.stone, Blocks.gold_ore, 30, "Gold");
-	static PlanetType REDSTONE = new PlanetType(Blocks.stone, Blocks.redstone_ore, 30, "Redstone");
-	static PlanetType LAPISLAZULI = new PlanetType(Blocks.stone, Blocks.lapis_ore, 15, "Lapislazuli");
-	static PlanetType TNT = new PlanetType(Blocks.stone, Blocks.tnt, 2, "TNT");
-	static PlanetType DIAMOND = new PlanetType(Blocks.stone, Blocks.diamond_ore, 2, "Diamond");
-	static PlanetType EMERALD = new PlanetType(Blocks.stone, Blocks.emerald_ore, 1, "Emerald");
+	static PlanetType GRAVEL = new PlanetType(Blocks.stone.getDefaultState(), Blocks.gravel.getDefaultState(), 40, "Gravel");
+	static PlanetType COBBLESTONE = new PlanetType(Blocks.stone.getDefaultState(), Blocks.cobblestone.getDefaultState(), 60, "Cobblestone");
+	static PlanetType LAVA = new PlanetType(Blocks.stone.getDefaultState(), Blocks.lava.getDefaultState(), 60, "Lava");
+	static PlanetType COAL = new PlanetType(Blocks.stone.getDefaultState(), Blocks.coal_ore.getDefaultState(), 60, "Coal");
+	static PlanetType IRON = new PlanetType(Blocks.stone.getDefaultState(), Blocks.iron_ore.getDefaultState(), 60, "Iron");
+	static PlanetType GOLD = new PlanetType(Blocks.stone.getDefaultState(), Blocks.gold_ore.getDefaultState(), 30, "Gold");
+	static PlanetType REDSTONE = new PlanetType(Blocks.stone.getDefaultState(), Blocks.redstone_ore.getDefaultState(), 30, "Redstone");
+	static PlanetType LAPISLAZULI = new PlanetType(Blocks.stone.getDefaultState(), Blocks.lapis_ore.getDefaultState(), 15, "Lapislazuli");
+	static PlanetType TNT = new PlanetType(Blocks.stone.getDefaultState(), Blocks.tnt.getDefaultState(), 2, "TNT");
+	static PlanetType DIAMOND = new PlanetType(Blocks.stone.getDefaultState(), Blocks.diamond_ore.getDefaultState(), 2, "Diamond");
+	static PlanetType EMERALD = new PlanetType(Blocks.stone.getDefaultState(), Blocks.emerald_ore.getDefaultState(), 1, "Emerald");
 
 	static ArrayList<PlanetType> stonetypes = new ArrayList<PlanetType>();
 	static ArrayList<PlanetType> types = initTypes();
@@ -114,7 +116,7 @@ public class Planet {
 		return type;
 	}
 
-	public void generateChunk(int chunkX, int chunkZ, Block[] ablock, byte[] ameta) {
+	public void generateChunk(int chunkX, int chunkZ, ChunkPrimer primer) {
 		this.rand.setSeed(chunkX * 341873128712L + chunkZ * 132897987541L);
 		TimeAnalyzer.start("generateChunk");
 		for (int x2 = Math.max(chunkX * 16, this.x - this.radius); x2 <= Math.min(chunkX * 16 + 15, this.x + this.radius); x2++) {
@@ -123,15 +125,15 @@ public class Planet {
 					int d = round(distance(this.x, this.y, this.z, x2, y2, z2));
 					if (d == this.radius) {
 						if (isBottomBlock(x2, y2, z2))
-							setBlock(x2, y2, z2, this.type.getBottomBlock(), 0, ablock, ameta);
+							setBlock(x2, y2, z2, this.type.getBottom(), primer);
 						else if (isTopBlock(x2, y2, z2))
-							setBlock(x2, y2, z2, this.type.getTopBlock(), 0, ablock, ameta);
+							setBlock(x2, y2, z2, this.type.getTop(), primer);
 						else
-							setBlock(x2, y2, z2, this.type.out, 0, ablock, ameta);
+							setBlock(x2, y2, z2, this.type.out, primer);
 					} else if (d < this.radius) {
-						setBlock(x2, y2, z2, this.type.in, 0, ablock, ameta);
+						setBlock(x2, y2, z2, this.type.in, primer);
 					}
-					generateSpecial(x2, y2, z2, ablock, ameta);
+					generateSpecial(x2, y2, z2, primer);
 				}
 			}
 		}
@@ -149,44 +151,56 @@ public class Planet {
 		for (int x2 = Math.max(chunkX * 16, this.x - this.radius); x2 <= Math.min(chunkX * 16 + 15, this.x + this.radius); x2++) {
 			for (int y2 = this.y - this.radius; y2 <= this.y + this.radius; y2++) {
 				for (int z2 = Math.max(chunkZ * 16, this.z - this.radius); z2 <= Math.min(chunkZ * 16 + 15, this.z + this.radius); z2++) {
+					BlockPos pos = new BlockPos(x2, y2, z2);
+					BlockPos above = pos.up();
 					if (isTopBlock(x2, y2, z2)) {
-						if ((this.type == SAND) && (this.rand.nextDouble() <= 0.05D) && (Blocks.cactus.canPlaceBlockAt(world, x2, y2 + 1, z2))) {
+						if ((this.type == SAND) && (this.rand.nextDouble() <= 0.05D) && (Blocks.cactus.canPlaceBlockAt(world, above))) {
 							for (int i = 1; i <= 1 + this.rand.nextInt(3); i++) {
-								world.setBlock(x2, y2 + i, z2, Blocks.cactus);
+								world.setBlockState(pos.up(i), Blocks.cactus.getDefaultState());
 							}
 						} else if (this.type == DIRT) {
-							if ((this.rand.nextDouble() <= 0.1D) && (Blocks.tallgrass.canPlaceBlockAt(world, x2, y2 + 1, z2))) {
-								world.setBlock(x2, y2 + 1, z2, Blocks.tallgrass, 1, 3);
-							} else if (this.rand.nextDouble() <= 0.004D) { // sugar cane
-								boolean flag1 = (world.getBlock(x2 + 1, y2, z2) == Blocks.grass) && (world.getBlock(x2 - 1, y2, z2) == Blocks.grass)
-										&& (world.getBlock(x2, y2, z2 + 1) == Blocks.grass) && (world.getBlock(x2, y2, z2 - 1) == Blocks.grass);
-								boolean flag2 = (world.getBlock(x2 + 1, y2 + 1, z2) == Blocks.air) && (world.getBlock(x2 - 1, y2 + 1, z2) == Blocks.air)
-										&& (world.getBlock(x2, y2 + 1, z2 + 1) == Blocks.air) && (world.getBlock(x2, y2 + 1, z2 - 1) == Blocks.air);
+							if ((this.rand.nextDouble() <= 0.1D) && (Blocks.tallgrass.canPlaceBlockAt(world, above))) {
+								world.setBlockState(above, Blocks.tallgrass.getDefaultState());
+							} else if (this.rand.nextDouble() <= 0.004D) { // ref. BlockReeds
+								boolean current = world.getBlockState(pos) == Blocks.grass;
+								// flag1 - surrounded by grass, flag2 - above air
+								boolean flag1 = (world.getBlockState(pos.north()) == Blocks.grass) && (world.getBlockState(pos.south()) == Blocks.grass)
+										&& (world.getBlockState(pos.east()) == Blocks.grass) && (world.getBlockState(pos.west()) == Blocks.grass);
+								boolean flag2 = (world.getBlockState(above.north()) == Blocks.air) && (world.getBlockState(above.south()) == Blocks.air)
+										&& (world.getBlockState(above.east()) == Blocks.air) && (world.getBlockState(above.west()) == Blocks.air);
 
-								if ((flag1) && (flag2)) {
-									world.setBlock(x2, y2, z2, Blocks.water);
-									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++)
-										world.setBlock(x2 + 1, y2 + i, z2, Blocks.reeds);
-									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++)
-										world.setBlock(x2 - 1, y2 + i, z2, Blocks.reeds);
-									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++)
-										world.setBlock(x2, y2 + i, z2 + 1, Blocks.reeds);
-									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++)
-										world.setBlock(x2, y2 + i, z2 - 1, Blocks.reeds);
+								if (current && flag1 && flag2) { // if all requirements are met, start actual generation
+									world.setBlockState(pos, Blocks.water.getDefaultState());
+									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++) {
+										if (world.getBlockState(pos.north().up(i)).getBlock() == Blocks.air)
+											world.setBlockState(pos.north().up(i), Blocks.reeds.getDefaultState());
+									}
+									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++) {
+										if (world.getBlockState(pos.south().up(i)).getBlock() == Blocks.air)
+											world.setBlockState(pos.south().up(i), Blocks.reeds.getDefaultState());
+									}
+									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++) {
+										if (world.getBlockState(pos.east().up(i)).getBlock() == Blocks.air)
+											world.setBlockState(pos.east().up(i), Blocks.reeds.getDefaultState());
+									}
+									for (int i = 1; i <= 1 + this.rand.nextInt(3); i++) {
+										if (world.getBlockState(pos.west().up(i)).getBlock() == Blocks.air)
+											world.setBlockState(pos.west().up(i), Blocks.reeds.getDefaultState());
+									}
 								}
 							}
 						}
 					} else if (isBottomBlock(x2, y2, z2)) {
 						if (this.type == WATER) {
 							if (x2 == this.x && z2 == this.z) {
-								world.setBlockToAir(x2, y2, z2);
+								world.setBlockToAir(pos);
 							} else {
-								if (world.getBlock(x2, y2 + 1, z2) == Blocks.water || world.getBlock(x2, y2 + 1, z2) == Blocks.flowing_water) {
+								if (world.getBlockState(above) == Blocks.water || world.getBlockState(above) == Blocks.flowing_water) {
 									for (int i = 1; i <= 1 + this.rand.nextInt(2); i++)
-										world.setBlock(x2, y2 + i, z2, Blocks.clay);
-								} else if (world.getBlock(x2, y2 + 2, z2) == Blocks.water || world.getBlock(x2, y2 + 2, z2) == Blocks.flowing_water) {
+										world.setBlockState(pos.up(i), Blocks.clay.getDefaultState());
+								} else if (world.getBlockState(pos.up(2)) == Blocks.water || world.getBlockState(pos.up(2)) == Blocks.flowing_water) {
 									for (int i = 2; i <= 2 + this.rand.nextInt(2); i++)
-										world.setBlock(x2, y2 + i, z2, Blocks.clay);
+										world.setBlockState(pos.up(i), Blocks.clay.getDefaultState());
 								}
 							}
 						}
@@ -197,7 +211,7 @@ public class Planet {
 		TimeAnalyzer.end("decorateChunk");
 	}
 
-	private void generateSpecial(int x, int y, int z, Block[] ablock, byte[] data) {
+	private void generateSpecial(int x, int y, int z, ChunkPrimer primer) {
 	}
 
 	private boolean isTopBlock(int x2, int y2, int z2) {
@@ -244,12 +258,17 @@ public class Planet {
 		return y + z * 256 + x * 256 * 16;
 	}
 
-	public static void setBlock(int x, int y, int z, Block block, int meta, Block[] ablock, byte[] ameta) {
-		if ((y < 0) || (y >= 256)) {
+	// This is a wrapper for the setBlockState, to prevent OutOfBoundsExceptions
+	public static void setBlock(int x, int y, int z, IBlockState state, ChunkPrimer primer) {
+		if ((y < 0) || (y >= 256)) { // TODO: remove this and fix the errors themselves
 			return;
 		}
-		ablock[getBlockNum(x % 16, y, z % 16)] = block;
-		ameta[getBlockNum(x % 16, y, z % 16)] = (byte) meta;
+		try {
+			primer.setBlockState(x % 16, y, z % 16, state); // TODO: Make this work for e.g. -1
+		} catch (RuntimeException e) {
+			System.out.println("ERROR setting block: " + x + "(" + (x % 16) + ")," + y + "," + z + "(" + (z % 16) + ") !" + (x << 12 | z << 8 | y) + " >= 65536");
+			throw e;
+		}
 	}
 
 	public static double distance(double x1, double y1, double z1, double x2, double y2, double z2) {

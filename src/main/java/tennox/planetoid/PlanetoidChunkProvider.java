@@ -2,6 +2,7 @@ package tennox.planetoid;
 
 import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.CAVE;
 import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.MINESHAFT;
+import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.OCEAN_MONUMENT;
 import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.RAVINE;
 import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.SCATTERED_FEATURE;
 import static net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.STRONGHOLD;
@@ -17,20 +18,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import cpw.mods.fml.common.eventhandler.Event.Result;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.MathHelper;
-import net.minecraft.world.ChunkPosition;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkPrimer;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderSettings;
 import net.minecraft.world.gen.MapGenBase;
 import net.minecraft.world.gen.MapGenCaves;
 import net.minecraft.world.gen.MapGenRavine;
@@ -43,11 +45,12 @@ import net.minecraft.world.gen.structure.MapGenMineshaft;
 import net.minecraft.world.gen.structure.MapGenScatteredFeature;
 import net.minecraft.world.gen.structure.MapGenStronghold;
 import net.minecraft.world.gen.structure.MapGenVillage;
+import net.minecraft.world.gen.structure.StructureOceanMonument;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.terraingen.ChunkProviderEvent;
 import net.minecraftforge.event.terraingen.PopulateChunkEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
 
+// ref. ChunkProviderGenerate
 public class PlanetoidChunkProvider implements IChunkProvider {
 
 	private Random rand;
@@ -82,15 +85,26 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	private MapGenMineshaft mineshaftGenerator = new MapGenMineshaft();
 	private MapGenScatteredFeature scatteredFeatureGenerator = new MapGenScatteredFeature();
 	private MapGenBase ravineGenerator = new MapGenRavine();
+	private StructureOceanMonument oceanMonumentGenerator;
 	private BiomeGenBase[] biomesForGeneration;
 
-	{
-		caveGenerator = TerrainGen.getModdedMapGen(caveGenerator, CAVE);
-		strongholdGenerator = (MapGenStronghold) TerrainGen.getModdedMapGen(strongholdGenerator, STRONGHOLD);
-		villageGenerator = (MapGenVillage) TerrainGen.getModdedMapGen(villageGenerator, VILLAGE);
-		mineshaftGenerator = (MapGenMineshaft) TerrainGen.getModdedMapGen(mineshaftGenerator, MINESHAFT);
-		scatteredFeatureGenerator = (MapGenScatteredFeature) TerrainGen.getModdedMapGen(scatteredFeatureGenerator, SCATTERED_FEATURE);
-		ravineGenerator = TerrainGen.getModdedMapGen(ravineGenerator, RAVINE);
+	private PlanetoidProviderSettings settings;
+
+	public static class PlanetoidProviderSettings {
+		public boolean useCaves = true;
+		public boolean useDungeons = true;
+		public int dungeonChance = 8;
+		public boolean useStrongholds = true;
+		public boolean useVillages = false; // doesn't look very good (#2)
+		public boolean useMineShafts = false; // doesn't look good either
+		public boolean useTemples = true;
+		public boolean useMonuments = true;
+		public boolean useRavines = true;
+		public boolean useWaterLakes = true;
+		public int waterLakeChance = 4;
+		public boolean useLavaLakes = true;
+		public int lavaLakeChance = 80;
+		public boolean useLavaOceans = false;
 	}
 
 	// ChunkProviderGenerate
@@ -98,6 +112,27 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		this.world = world;
 		this.seed = seed;
 		this.rand = new Random(seed);
+
+		this.settings = new PlanetoidProviderSettings();
+		settings.useVillages = false;
+		settings.useMineShafts = false;
+
+		this.caveGenerator = new MapGenCaves();
+		this.strongholdGenerator = new MapGenStronghold();
+		this.villageGenerator = new MapGenVillage();
+		this.mineshaftGenerator = new MapGenMineshaft();
+		this.scatteredFeatureGenerator = new MapGenScatteredFeature();
+		this.ravineGenerator = new MapGenRavine();
+		this.oceanMonumentGenerator = new StructureOceanMonument();
+		{
+			caveGenerator = TerrainGen.getModdedMapGen(caveGenerator, CAVE);
+			strongholdGenerator = (MapGenStronghold) TerrainGen.getModdedMapGen(strongholdGenerator, STRONGHOLD);
+			villageGenerator = (MapGenVillage) TerrainGen.getModdedMapGen(villageGenerator, VILLAGE);
+			mineshaftGenerator = (MapGenMineshaft) TerrainGen.getModdedMapGen(mineshaftGenerator, MINESHAFT);
+			scatteredFeatureGenerator = (MapGenScatteredFeature) TerrainGen.getModdedMapGen(scatteredFeatureGenerator, SCATTERED_FEATURE);
+			ravineGenerator = TerrainGen.getModdedMapGen(ravineGenerator, RAVINE);
+			oceanMonumentGenerator = (StructureOceanMonument) TerrainGen.getModdedMapGen(oceanMonumentGenerator, OCEAN_MONUMENT);
+		}
 
 		this.mapFeaturesEnabled = mapFeaturesEnabled;
 		this.generatorInfo = PlanetoidGeneratorInfo.createGeneratorFromString(generatorOptions);
@@ -139,26 +174,40 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	public Chunk provideChunk(int chunkX, int chunkZ) {
 		TimeAnalyzer.start("provideChunk");
 		this.rand.setSeed((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L);
+		ChunkPrimer primer = new ChunkPrimer();
 		preGenerate(chunkX, chunkZ);
 
-		Block[] ablock = new Block[65536];
-		byte[] abyte = new byte[65536];
 		this.biomesForGeneration = this.world.getWorldChunkManager().loadBlockGeneratorData(this.biomesForGeneration, chunkX * 16, chunkZ * 16, 16, 16);
 
-		generatePlanetoid(chunkX, chunkZ, ablock, abyte);
+		generatePlanetoid(chunkX, chunkZ, primer);
 
 		// this.replaceBlocksForBiome(chunkX, chunkZ, ablock, abyte, this.biomesForGeneration);
-		this.caveGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
-		this.ravineGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
+		// -> we don't want this. this replaces all blocks because they would be generated all out of stone in default generation
 
-		if (this.mapFeaturesEnabled) {
-			this.mineshaftGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
-			this.villageGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
-			this.strongholdGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
-			this.scatteredFeatureGenerator.func_151539_a(this, this.world, chunkX, chunkZ, ablock);
+		// TODO: remove map features not applicable for planetoids
+		if (this.settings.useCaves) {
+			this.caveGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useRavines) {
+			this.ravineGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useMineShafts && this.mapFeaturesEnabled) {
+			this.mineshaftGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useVillages && this.mapFeaturesEnabled) {
+			this.villageGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useStrongholds && this.mapFeaturesEnabled) {
+			this.strongholdGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useTemples && this.mapFeaturesEnabled) {
+			this.scatteredFeatureGenerator.generate(this, this.world, chunkX, chunkZ, primer);
+		}
+		if (this.settings.useMonuments && this.mapFeaturesEnabled) {
+			this.oceanMonumentGenerator.generate(this, this.world, chunkX, chunkZ, primer);
 		}
 
-		Chunk chunk = new Chunk(this.world, ablock, abyte, chunkX, chunkZ);
+		Chunk chunk = new Chunk(this.world, primer, chunkX, chunkZ);
 		byte[] abyte1 = chunk.getBiomeArray();
 
 		for (int k = 0; k < abyte1.length; ++k) {
@@ -170,9 +219,13 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		return chunk;
 	}
 
+	public Chunk provideChunk(BlockPos blockPosIn) {
+		return this.provideChunk(blockPosIn.getX() >> 4, blockPosIn.getZ() >> 4);
+	}
+
 	public void preGenerate(int cx, int cz) {
 		TimeAnalyzer.start("preGenerate");
-		int x = round(cx / this.pregenChunkSize);
+		int x = round(cx / this.pregenChunkSize); // TODO: shouldn't this be floor
 		int z = round(cz / this.pregenChunkSize);
 
 		preGenerate2(x - 1, z - 1);
@@ -230,14 +283,14 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		TimeAnalyzer.end("preGenerate_do");
 	}
 
-	public void generatePlanetoid(int chunkX, int chunkZ, Block[] ablock, byte[] ameta) {
+	public void generatePlanetoid(int chunkX, int chunkZ, ChunkPrimer primer) {
 		TimeAnalyzer.start("generate");
 
 		TimeAnalyzer.start("finishPlanets");
 		for (int i = 0; i < this.unfinished.size(); i++) {
 			Planet p = (Planet) this.unfinished.get(i);
 			if (p.shouldFinishChunk(chunkX, chunkZ))
-				p.generateChunk(chunkX, chunkZ, ablock, ameta);
+				p.generateChunk(chunkX, chunkZ, primer);
 			if (p.isFinished()) {
 				this.unfinished.remove(p);
 				this.finished.add(p);
@@ -251,7 +304,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 4; y++) {
 				for (int z = 0; z < 16; z++) {
-					Planet.setBlock(x, y, z, (y == 0 ? Blocks.bedrock : Blocks.water), 0, ablock, ameta);
+					primer.setBlockState(x, y, z, (y == 0 ? Blocks.bedrock.getDefaultState() : Blocks.water.getDefaultState()));
 				}
 			}
 		}
@@ -260,81 +313,99 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		TimeAnalyzer.end("generate");
 	}
 
-	@Override
-	public Chunk loadChunk(int var1, int var2) {
-		return this.provideChunk(var1, var2);
-	}
+	// @Override -> TODO: not anymore in 1.8 ?!
+	// public Chunk loadChunk(int var1, int var2) {
+	// return this.provideChunk(var1, var2);
+	// }
 
 	@Override
 	// ChunkProviderGenerate
 	public void populate(IChunkProvider provider, int chunkX, int chunkZ) {
-		BlockFalling.fallInstantly = true;
+		BlockFalling.fallInstantly = true; // TODO: shouldn't this be off for performance?
 		int k = chunkX * 16;
 		int l = chunkZ * 16;
-		BiomeGenBase biomegenbase = this.world.getBiomeGenForCoords(k + 16, l + 16);
+		BlockPos blockpos = new BlockPos(k, 0, l);
+		BiomeGenBase biomegenbase = this.world.getBiomeGenForCoords(blockpos.add(16, 0, 16));
 		this.rand.setSeed(this.world.getSeed());
 		long i1 = this.rand.nextLong() / 2L * 2L + 1L;
 		long j1 = this.rand.nextLong() / 2L * 2L + 1L;
 		this.rand.setSeed((long) chunkX * i1 + (long) chunkZ * j1 ^ this.world.getSeed());
+		ChunkCoordIntPair chunkcoordintpair = new ChunkCoordIntPair(chunkX, chunkZ);
 		boolean hasGeneratedVillage = false;
 
 		MinecraftForge.EVENT_BUS.post(new PopulateChunkEvent.Pre(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage));
 
-		if (this.mapFeaturesEnabled) {
-			this.mineshaftGenerator.generateStructuresInChunk(this.world, this.rand, chunkX, chunkZ);
-			hasGeneratedVillage = this.villageGenerator.generateStructuresInChunk(this.world, this.rand, chunkX, chunkZ);
-			this.strongholdGenerator.generateStructuresInChunk(this.world, this.rand, chunkX, chunkZ);
-			this.scatteredFeatureGenerator.generateStructuresInChunk(this.world, this.rand, chunkX, chunkZ);
+		if (this.settings.useMineShafts && this.mapFeaturesEnabled) {
+			this.mineshaftGenerator.generateStructure(this.world, this.rand, chunkcoordintpair);
+		}
+
+		if (this.settings.useVillages && this.mapFeaturesEnabled) {
+			hasGeneratedVillage = this.villageGenerator.generateStructure(this.world, this.rand, chunkcoordintpair);
+		}
+
+		if (this.settings.useStrongholds && this.mapFeaturesEnabled) {
+			this.strongholdGenerator.generateStructure(this.world, this.rand, chunkcoordintpair);
+		}
+
+		if (this.settings.useTemples && this.mapFeaturesEnabled) {
+			this.scatteredFeatureGenerator.generateStructure(this.world, this.rand, chunkcoordintpair);
+		}
+
+		if (this.settings.useMonuments && this.mapFeaturesEnabled) {
+			this.oceanMonumentGenerator.generateStructure(this.world, this.rand, chunkcoordintpair);
 		}
 
 		int k1;
 		int l1;
 		int i2;
 
-		if (biomegenbase != BiomeGenBase.desert && biomegenbase != BiomeGenBase.desertHills && !hasGeneratedVillage && this.rand.nextInt(4) == 0
-				&& TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, LAKE)) {
-			k1 = k + this.rand.nextInt(16) + 8;
+		if (biomegenbase != BiomeGenBase.desert && biomegenbase != BiomeGenBase.desertHills && this.settings.useWaterLakes && !hasGeneratedVillage
+				&& this.rand.nextInt(this.settings.waterLakeChance) == 0 && TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, LAKE)) {
+			k1 = this.rand.nextInt(16) + 8;
 			l1 = this.rand.nextInt(256);
-			i2 = l + this.rand.nextInt(16) + 8;
-			(new WorldGenLakes(Blocks.water)).generate(this.world, this.rand, k1, l1, i2);
+			i2 = this.rand.nextInt(16) + 8;
+			(new WorldGenLakes(Blocks.water)).generate(this.world, this.rand, blockpos.add(k1, l1, i2));
 		}
 
-		if (TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, LAVA) && !hasGeneratedVillage && this.rand.nextInt(8) == 0) {
-			k1 = k + this.rand.nextInt(16) + 8;
+		if (TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, LAVA) && !hasGeneratedVillage
+				&& this.rand.nextInt(this.settings.lavaLakeChance / 10) == 0 && this.settings.useLavaLakes) {
+			k1 = this.rand.nextInt(16) + 8;
 			l1 = this.rand.nextInt(this.rand.nextInt(248) + 8);
-			i2 = l + this.rand.nextInt(16) + 8;
+			i2 = this.rand.nextInt(16) + 8;
 
-			if (l1 < 63 || this.rand.nextInt(10) == 0) {
-				(new WorldGenLakes(Blocks.lava)).generate(this.world, this.rand, k1, l1, i2);
+			if (l1 < 63 || this.rand.nextInt(this.settings.lavaLakeChance / 8) == 0) {
+				(new WorldGenLakes(Blocks.lava)).generate(this.world, this.rand, blockpos.add(k1, l1, i2));
 			}
 		}
 
-		boolean doGen = TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, DUNGEON);
-		for (k1 = 0; doGen && k1 < 8; ++k1) {
-			l1 = k + this.rand.nextInt(16) + 8;
-			i2 = this.rand.nextInt(256);
-			int j2 = l + this.rand.nextInt(16) + 8;
-			(new WorldGenDungeons()).generate(this.world, this.rand, l1, i2, j2);
+		if (this.settings.useDungeons) {
+			boolean doGen = TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, DUNGEON);
+			for (k1 = 0; doGen && k1 < this.settings.dungeonChance; ++k1) {
+				l1 = this.rand.nextInt(16) + 8;
+				i2 = this.rand.nextInt(256);
+				int j2 = this.rand.nextInt(16) + 8;
+				(new WorldGenDungeons()).generate(this.world, this.rand, blockpos.add(l1, i2, j2));
+			}
 		}
 
-		biomegenbase.decorate(this.world, this.rand, k, l);
+		biomegenbase.decorate(this.world, this.rand, new BlockPos(k, 0, l));
 		if (TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, ANIMALS)) {
 			SpawnerAnimals.performWorldGenSpawning(this.world, biomegenbase, k + 8, l + 8, 16, 16, this.rand);
 		}
-		k += 8;
-		l += 8;
+		blockpos = blockpos.add(8, 0, 8);
 
-		doGen = TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, ICE);
+		boolean doGen = TerrainGen.populate(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage, ICE);
 		for (k1 = 0; doGen && k1 < 16; ++k1) {
 			for (l1 = 0; l1 < 16; ++l1) {
-				i2 = this.world.getPrecipitationHeight(k + k1, l + l1);
+				BlockPos blockpos1 = this.world.getPrecipitationHeight(blockpos.add(k1, 0, l1));
+				BlockPos blockpos2 = blockpos1.down();
 
-				if (this.world.isBlockFreezable(k1 + k, i2 - 1, l1 + l)) {
-					this.world.setBlock(k1 + k, i2 - 1, l1 + l, Blocks.ice, 0, 2);
+				if (this.world.canBlockFreezeWater(blockpos2)) {
+					this.world.setBlockState(blockpos2, Blocks.ice.getDefaultState(), 2);
 				}
 
-				if (this.world.func_147478_e(k1 + k, i2, l1 + l, true)) {
-					this.world.setBlock(k1 + k, i2, l1 + l, Blocks.snow_layer, 0, 2);
+				if (this.world.canSnowAt(blockpos1, true)) {
+					this.world.setBlockState(blockpos1, Blocks.snow_layer.getDefaultState(), 2);
 				}
 			}
 		}
@@ -361,20 +432,29 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 	@Override
 	public String makeString() {
-		return "RandomLevelSource";
+		return "RandomPlanetoidLevelSource";
 	}
 
 	@Override
-	public List getPossibleCreatures(EnumCreatureType par1EnumCreatureType, int par2, int par3, int par4) {
-		BiomeGenBase biomegenbase = this.world.getBiomeGenForCoords(par2, par4);
-		return par1EnumCreatureType == EnumCreatureType.monster && this.scatteredFeatureGenerator.func_143030_a(par2, par3, par4) ? this.scatteredFeatureGenerator
-				.getScatteredFeatureSpawnList() : biomegenbase.getSpawnableList(par1EnumCreatureType);
+	public List getPossibleCreatures(EnumCreatureType creatureType, BlockPos pos) {
+		BiomeGenBase biomegenbase = this.world.getBiomeGenForCoords(pos);
+
+		if (this.mapFeaturesEnabled) {
+			if (creatureType == EnumCreatureType.MONSTER && this.scatteredFeatureGenerator.func_175798_a(pos)) {
+				return this.scatteredFeatureGenerator.getScatteredFeatureSpawnList();
+			}
+			if (creatureType == EnumCreatureType.MONSTER && this.settings.useMonuments && this.oceanMonumentGenerator.func_175796_a(this.world, pos)) {
+				return this.oceanMonumentGenerator.func_175799_b();
+			}
+		}
+
+		return biomegenbase.getSpawnableList(creatureType);
 	}
 
 	@Override
-	// findClosestStructure
-	public ChunkPosition func_147416_a(World world, String structure, int x, int y, int z) {
-		return "Stronghold".equals(structure) && this.strongholdGenerator != null ? this.strongholdGenerator.func_151545_a(world, x, y, z) : null;
+	// was called: findClosestStructure
+	public BlockPos getStrongholdGen(World worldIn, String structureName, BlockPos pos) {
+		return "Stronghold".equals(structureName) && this.strongholdGenerator != null ? this.strongholdGenerator.getClosestStrongholdPos(worldIn, pos) : null;
 	}
 
 	@Override
@@ -383,12 +463,21 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	}
 
 	@Override
-	public void recreateStructures(int x, int z) {
-		if (this.mapFeaturesEnabled) {
-			this.mineshaftGenerator.func_151539_a(this, this.world, x, z, (Block[]) null);
-			this.villageGenerator.func_151539_a(this, this.world, x, z, (Block[]) null);
-			this.strongholdGenerator.func_151539_a(this, this.world, x, z, (Block[]) null);
-			this.scatteredFeatureGenerator.func_151539_a(this, this.world, x, z, (Block[]) null);
+	public void recreateStructures(Chunk chunk, int x, int z) {
+		if (this.settings.useMineShafts && this.mapFeaturesEnabled) {
+			this.mineshaftGenerator.generate(this, this.world, x, z, (ChunkPrimer) null);
+		}
+		if (this.settings.useVillages && this.mapFeaturesEnabled) {
+			this.villageGenerator.generate(this, this.world, x, z, (ChunkPrimer) null);
+		}
+		if (this.settings.useStrongholds && this.mapFeaturesEnabled) {
+			this.strongholdGenerator.generate(this, this.world, x, z, (ChunkPrimer) null);
+		}
+		if (this.settings.useTemples && this.mapFeaturesEnabled) {
+			this.scatteredFeatureGenerator.generate(this, this.world, x, z, (ChunkPrimer) null);
+		}
+		if (this.settings.useMonuments && this.mapFeaturesEnabled) {
+			this.oceanMonumentGenerator.generate(this, this.world, x, z, (ChunkPrimer) null);
 		}
 	}
 
@@ -401,4 +490,15 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 	}
 
+	@Override
+	// TODO: what's this? - ocean monument func_177460_a
+	public boolean func_177460_a(IChunkProvider p_177460_1_, Chunk p_177460_2_, int p_177460_3_, int p_177460_4_) {
+		boolean flag = false;
+
+		if (this.settings.useMonuments && this.mapFeaturesEnabled && p_177460_2_.getInhabitedTime() < 3600L) {
+			flag |= this.oceanMonumentGenerator.generateStructure(this.world, this.rand, new ChunkCoordIntPair(p_177460_3_, p_177460_4_));
+		}
+
+		return flag;
+	}
 }

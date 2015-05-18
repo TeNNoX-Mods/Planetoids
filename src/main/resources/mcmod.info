@@ -1,6 +1,6 @@
 [
 {
-  "modid": "planetoid",
+  "modid": "TeNNoX_Planetoid",
   "name": "Planetoid",
   "description": "Awesome little Planetoid worlds. Infinitely generated on-the-fly.",
   "version": "${version}",
