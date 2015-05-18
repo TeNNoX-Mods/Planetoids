@@ -1,10 +1,10 @@
-# TeNNoX' Planetoid Mod
+# TeNNoX' Planetoids Mod
 
-This is the repo for my Minecraft Mod 'Planetoid'.
+This is the repo for my Minecraft Mod 'Planetoids'.
 
 
 All info and **downloads** can be found here: 
 
-http://tennoxmods.blogspot.de/p/planetoid.html
+[Official Page](http://tennoxmods.blogspot.de/p/planetoid.html)
 
 Feel free to fork/pull request - I'll appreciate it!
