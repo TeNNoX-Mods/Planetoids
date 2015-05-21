@@ -55,8 +55,8 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 	private Random rand;
 
-	ArrayList<Planet> finished = new ArrayList<Planet>();
-	ArrayList<Planet> unfinished = new ArrayList<Planet>();
+	ArrayList<Planet> finishedPlanets = new ArrayList<Planet>();
+	ArrayList<Planet> unfinishedPlanets = new ArrayList<Planet>();
 	ArrayList<Point> pregen = new ArrayList<Point>();
 	int pregenChunkSize = 4;
 
@@ -272,12 +272,12 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 						int cx = (int) Math.floor(i / 16.0D);
 						int cz = (int) Math.floor(k / 16.0D);
 
-						if (!p.unfinished.contains(new Point(cx, cz))) {
-							p.unfinished.add(new Point(cx, cz));
+						if (!p.unfinishedChunks.contains(new Point(cx, cz))) {
+							p.unfinishedChunks.add(new Point(cx, cz));
 						}
 					}
 				}
-				this.unfinished.add(p);
+				this.unfinishedPlanets.add(p);
 			}
 		}
 		TimeAnalyzer.end("preGenerate_do");
@@ -287,13 +287,13 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		TimeAnalyzer.start("generate");
 
 		TimeAnalyzer.start("finishPlanets");
-		for (int i = 0; i < this.unfinished.size(); i++) {
-			Planet p = (Planet) this.unfinished.get(i);
+		for (int i = 0; i < this.unfinishedPlanets.size(); i++) {
+			Planet p = (Planet) this.unfinishedPlanets.get(i);
 			if (p.shouldFinishChunk(chunkX, chunkZ))
 				p.generateChunk(chunkX, chunkZ, primer);
 			if (p.isFinished()) {
-				this.unfinished.remove(p);
-				this.finished.add(p);
+				this.unfinishedPlanets.remove(p);
+				this.finishedPlanets.add(p);
 
 				i--;
 			}

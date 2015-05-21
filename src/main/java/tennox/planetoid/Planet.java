@@ -42,8 +42,11 @@ public class Planet {
 	int z;
 	int radius;
 	PlanetType type;
-	ArrayList<Point> unfinished = new ArrayList<Point>();
-	ArrayList<Point> finished = new ArrayList<Point>();
+	
+	/** List of not generated Chunks this Plantoid expands to **/
+	ArrayList<Point> unfinishedChunks = new ArrayList<Point>();
+	/** List of finished Chunks this Plantoid expands to **/
+	ArrayList<Point> finishedChunks = new ArrayList<Point>();
 
 	public Planet(PlanetoidChunkProvider provider, World w, int x2, int y2, int z2, int r) {
 		this.chunkprovider = provider;
@@ -138,10 +141,10 @@ public class Planet {
 			}
 		}
 
-		if (!this.finished.contains(new Point(chunkX, chunkZ)))
-			this.finished.add(new Point(chunkX, chunkZ));
-		if (this.unfinished.contains(new Point(chunkX, chunkZ)))
-			this.unfinished.remove(new Point(chunkX, chunkZ));
+		if (!this.finishedChunks.contains(new Point(chunkX, chunkZ)))
+			this.finishedChunks.add(new Point(chunkX, chunkZ));
+		if (this.unfinishedChunks.contains(new Point(chunkX, chunkZ)))
+			this.unfinishedChunks.remove(new Point(chunkX, chunkZ));
 		TimeAnalyzer.end("generateChunk");
 	}
 
@@ -223,19 +226,19 @@ public class Planet {
 	}
 
 	public boolean shouldFinishChunk(int cx, int cz) {
-		return this.unfinished.contains(new Point(cx, cz));
+		return this.unfinishedChunks.contains(new Point(cx, cz));
 	}
 
 	public boolean shouldDecorateChunk(int cx, int cz) {
-		return this.finished.contains(new Point(cx, cz));
+		return this.finishedChunks.contains(new Point(cx, cz));
 	}
 
 	public boolean isAreaClear() {
-		for (Planet p : this.chunkprovider.unfinished) {
+		for (Planet p : this.chunkprovider.unfinishedPlanets) {
 			if (p.intersects(this))
 				return false;
 		}
-		for (Planet p : this.chunkprovider.finished) {
+		for (Planet p : this.chunkprovider.finishedPlanets) {
 			if (p.intersects(this))
 				return false;
 		}
@@ -247,7 +250,7 @@ public class Planet {
 	}
 
 	public boolean isFinished() {
-		return this.unfinished.size() == 0;
+		return this.unfinishedChunks.size() == 0;
 	}
 
 	public static int getBlockNum(int x, int y, int z) {
