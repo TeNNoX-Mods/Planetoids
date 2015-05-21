@@ -128,13 +128,13 @@ public class Planet {
 					int d = round(distance(this.x, this.y, this.z, x2, y2, z2));
 					if (d == this.radius) {
 						if (isBottomBlock(x2, y2, z2))
-							setBlock(x2, y2, z2, this.type.getBottom(), primer);
+							setBlock(x2, y2, z2, this.type.getBottom(), primer, chunkX, chunkZ);
 						else if (isTopBlock(x2, y2, z2))
-							setBlock(x2, y2, z2, this.type.getTop(), primer);
+							setBlock(x2, y2, z2, this.type.getTop(), primer, chunkX, chunkZ);
 						else
-							setBlock(x2, y2, z2, this.type.out, primer);
+							setBlock(x2, y2, z2, this.type.out, primer, chunkX, chunkZ);
 					} else if (d < this.radius) {
-						setBlock(x2, y2, z2, this.type.in, primer);
+						setBlock(x2, y2, z2, this.type.in, primer, chunkX, chunkZ);
 					}
 					generateSpecial(x2, y2, z2, primer);
 				}
@@ -262,12 +262,14 @@ public class Planet {
 	}
 
 	// This is a wrapper for the setBlockState, to prevent OutOfBoundsExceptions
-	public static void setBlock(int x, int y, int z, IBlockState state, ChunkPrimer primer) {
+	public static void setBlock(int x, int y, int z, IBlockState state, ChunkPrimer primer, int chunkX, int chunkZ) {
 		if ((y < 0) || (y >= 256)) { // TODO: remove this and fix the errors themselves
 			return;
 		}
 		try {
-			primer.setBlockState(x % 16, y, z % 16, state); // TODO: Make this work for e.g. -1
+			int cx = x - chunkX * 16;
+			int cz = z - chunkZ * 16;
+			primer.setBlockState(cx, y, cz, Blocks.dirt.getDefaultState());
 		} catch (RuntimeException e) {
 			System.out.println("ERROR setting block: " + x + "(" + (x % 16) + ")," + y + "," + z + "(" + (z % 16) + ") !" + (x << 12 | z << 8 | y) + " >= 65536");
 			throw e;

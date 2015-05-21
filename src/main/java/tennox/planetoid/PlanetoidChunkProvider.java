@@ -175,6 +175,13 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		TimeAnalyzer.start("provideChunk");
 		this.rand.setSeed((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L);
 		ChunkPrimer primer = new ChunkPrimer();
+
+		for (int x = 0; x < 16; x++) {
+			for (int z = 0; z < 16; z++) {
+				primer.setBlockState(x, 0, z, Blocks.diamond_block.getDefaultState());
+			}
+		}
+
 		preGenerate(chunkX, chunkZ);
 
 		this.biomesForGeneration = this.world.getWorldChunkManager().loadBlockGeneratorData(this.biomesForGeneration, chunkX * 16, chunkZ * 16, 16, 16);
@@ -287,6 +294,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		TimeAnalyzer.start("generate");
 
 		TimeAnalyzer.start("finishPlanets");
+		System.out.println("finishing: " + unfinishedPlanets.size() + " planetoids (" + finishedPlanets.size() + " finished)");
 		for (int i = 0; i < this.unfinishedPlanets.size(); i++) {
 			Planet p = (Planet) this.unfinishedPlanets.get(i);
 			if (p.shouldFinishChunk(chunkX, chunkZ))

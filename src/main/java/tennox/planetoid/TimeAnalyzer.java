@@ -45,6 +45,9 @@ public class TimeAnalyzer {
 		if (!max.containsKey(s) || max.get(s) < t)
 			max.put(s, (int) t);
 		start.remove(s);
+		if (t > 1000) {
+			System.out.println("Section " + s + " took over " + t + "ms!");
+		}
 		lock.unlock();
 	}
 
