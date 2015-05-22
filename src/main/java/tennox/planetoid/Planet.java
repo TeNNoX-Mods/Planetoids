@@ -42,7 +42,7 @@ public class Planet {
 	int z;
 	int radius;
 	PlanetType type;
-	
+
 	/** List of not generated Chunks this Plantoid expands to **/
 	ArrayList<Point> unfinishedChunks = new ArrayList<Point>();
 	/** List of finished Chunks this Plantoid expands to **/
@@ -121,7 +121,7 @@ public class Planet {
 
 	public void generateChunk(int chunkX, int chunkZ, ChunkPrimer primer) {
 		this.rand.setSeed(chunkX * 341873128712L + chunkZ * 132897987541L);
-		TimeAnalyzer.start("generateChunk");
+		TimeAnalyzer.start("p-genchunk");
 		for (int x2 = Math.max(chunkX * 16, this.x - this.radius); x2 <= Math.min(chunkX * 16 + 15, this.x + this.radius); x2++) {
 			for (int y2 = this.y - this.radius; y2 <= this.y + this.radius; y2++) {
 				for (int z2 = Math.max(chunkZ * 16, this.z - this.radius); z2 <= Math.min(chunkZ * 16 + 15, this.z + this.radius); z2++) {
@@ -145,12 +145,12 @@ public class Planet {
 			this.finishedChunks.add(new Point(chunkX, chunkZ));
 		if (this.unfinishedChunks.contains(new Point(chunkX, chunkZ)))
 			this.unfinishedChunks.remove(new Point(chunkX, chunkZ));
-		TimeAnalyzer.end("generateChunk");
+		TimeAnalyzer.end();
 	}
 
 	public void decorateChunk(World world, int chunkX, int chunkZ) {
 		this.rand.setSeed(chunkX * 341873128712L + chunkZ * 132897987541L);
-		TimeAnalyzer.start("decorateChunk");
+		TimeAnalyzer.start("p-decorate");
 		for (int x2 = Math.max(chunkX * 16, this.x - this.radius); x2 <= Math.min(chunkX * 16 + 15, this.x + this.radius); x2++) {
 			for (int y2 = this.y - this.radius; y2 <= this.y + this.radius; y2++) {
 				for (int z2 = Math.max(chunkZ * 16, this.z - this.radius); z2 <= Math.min(chunkZ * 16 + 15, this.z + this.radius); z2++) {
@@ -211,7 +211,7 @@ public class Planet {
 				}
 			}
 		}
-		TimeAnalyzer.end("decorateChunk");
+		TimeAnalyzer.end();
 	}
 
 	private void generateSpecial(int x, int y, int z, ChunkPrimer primer) {

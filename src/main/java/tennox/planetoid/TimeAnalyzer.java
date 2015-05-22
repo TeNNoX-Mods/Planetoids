@@ -12,10 +12,17 @@ public class TimeAnalyzer {
 	private static HashMap<String, Long> start = new HashMap();
 	private static HashMap<String, Integer> max = new HashMap();
 
-	static Lock lock = new ReentrantLock();
+	private static Lock lock = new ReentrantLock();
 
-	public static void start(String s) {
+	private static String current = "";
+
+	public static void start(String s2) {
 		lock.lock();
+
+		current = current + "." + s2;
+		String s = current;
+		// System.out.println("Starting: " + s);
+
 		if (!all.containsKey(s)) {
 			all.put(s, Long.valueOf(0L));
 			count.put(s, Long.valueOf(1L));
@@ -30,8 +37,14 @@ public class TimeAnalyzer {
 		lock.unlock();
 	}
 
-	public static void end(String s) {
+	public static void end() {
 		lock.lock();
+
+		int last = current.lastIndexOf('.');
+		String s = current;
+		current = last > 0 ? current.substring(0, last) : "";
+		// System.out.println("Ending: " + s);
+
 		if (!start.containsKey(s)) {
 			lock.unlock();
 			return;

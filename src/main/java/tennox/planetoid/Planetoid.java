@@ -41,8 +41,10 @@ public class Planetoid {
 	public void onChat(ServerChatEvent e) {
 		if (e.message.equals("ta"))
 			TimeAnalyzer.print();
-		else if (e.message.equals("reset"))
+		else if (e.message.equals("reset")) {
 			TimeAnalyzer.reset();
+			System.out.println("TA RESET");
+		}
 	}
 
 	public static String translate(String string) {

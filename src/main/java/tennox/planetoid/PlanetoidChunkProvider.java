@@ -65,20 +65,6 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	private boolean mapFeaturesEnabled;
 	private PlanetoidGeneratorInfo generatorInfo;
 
-	private NoiseGeneratorOctaves field_147431_j;
-	private NoiseGeneratorOctaves field_147432_k;
-	private NoiseGeneratorOctaves field_147429_l;
-	private NoiseGeneratorPerlin field_147430_m;
-	double[] field_147427_d;
-	double[] field_147428_e;
-	double[] field_147425_f;
-	double[] field_147426_g;
-	private final double[] field_147434_q;
-	private final float[] parabolicField;
-	public NoiseGeneratorOctaves noiseGen5;
-	public NoiseGeneratorOctaves noiseGen6;
-	public NoiseGeneratorOctaves mobSpawnerNoise;
-	private double[] stoneNoise = new double[256];
 	private MapGenBase caveGenerator = new MapGenCaves();
 	private MapGenStronghold strongholdGenerator = new MapGenStronghold();
 	private MapGenVillage villageGenerator = new MapGenVillage();
@@ -136,33 +122,6 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 		this.mapFeaturesEnabled = mapFeaturesEnabled;
 		this.generatorInfo = PlanetoidGeneratorInfo.createGeneratorFromString(generatorOptions);
-
-		this.field_147431_j = new NoiseGeneratorOctaves(this.rand, 16);
-		this.field_147432_k = new NoiseGeneratorOctaves(this.rand, 16);
-		this.field_147429_l = new NoiseGeneratorOctaves(this.rand, 8);
-		this.field_147430_m = new NoiseGeneratorPerlin(this.rand, 4);
-		this.noiseGen5 = new NoiseGeneratorOctaves(this.rand, 10);
-		this.noiseGen6 = new NoiseGeneratorOctaves(this.rand, 16);
-		this.mobSpawnerNoise = new NoiseGeneratorOctaves(this.rand, 8);
-		this.field_147434_q = new double[825];
-		this.parabolicField = new float[25];
-
-		for (int j = -2; j <= 2; ++j) {
-			for (int k = -2; k <= 2; ++k) {
-				float f = 10.0F / MathHelper.sqrt_float((float) (j * j + k * k) + 0.2F);
-				this.parabolicField[j + 2 + (k + 2) * 5] = f;
-			}
-		}
-
-		NoiseGenerator[] noiseGens = { field_147431_j, field_147432_k, field_147429_l, field_147430_m, noiseGen5, noiseGen6, mobSpawnerNoise };
-		noiseGens = TerrainGen.getModdedNoiseGenerators(world, this.rand, noiseGens);
-		this.field_147431_j = (NoiseGeneratorOctaves) noiseGens[0];
-		this.field_147432_k = (NoiseGeneratorOctaves) noiseGens[1];
-		this.field_147429_l = (NoiseGeneratorOctaves) noiseGens[2];
-		this.field_147430_m = (NoiseGeneratorPerlin) noiseGens[3];
-		this.noiseGen5 = (NoiseGeneratorOctaves) noiseGens[4];
-		this.noiseGen6 = (NoiseGeneratorOctaves) noiseGens[5];
-		this.mobSpawnerNoise = (NoiseGeneratorOctaves) noiseGens[6];
 	}
 
 	@Override
@@ -172,7 +131,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 	@Override
 	public Chunk provideChunk(int chunkX, int chunkZ) {
-		TimeAnalyzer.start("provideChunk");
+		TimeAnalyzer.start("provide");
 		this.rand.setSeed((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L);
 		ChunkPrimer primer = new ChunkPrimer();
 
@@ -222,7 +181,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		}
 
 		chunk.generateSkylightMap();
-		TimeAnalyzer.end("provideChunk");
+		TimeAnalyzer.end();
 		return chunk;
 	}
 
@@ -231,7 +190,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	}
 
 	public void preGenerate(int cx, int cz) {
-		TimeAnalyzer.start("preGenerate");
+		TimeAnalyzer.start("pregen");
 		int x = round(cx / this.pregenChunkSize); // TODO: shouldn't this be floor
 		int z = round(cz / this.pregenChunkSize);
 
@@ -245,7 +204,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		preGenerate2(x + 1, z);
 		preGenerate2(x + 1, z + 1);
 
-		TimeAnalyzer.end("preGenerate");
+		TimeAnalyzer.end();
 	}
 
 	private void preGenerate2(int x, int z) {
@@ -261,7 +220,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	}
 
 	private void preGenerate_do(int x1, int z1, int x2, int z2) {
-		TimeAnalyzer.start("preGenerate_do");
+		TimeAnalyzer.start("pregen_do");
 
 		for (int l = 0; l < Option.SPAWNTRIES.getValue(generatorInfo); l++) {
 			double min = Option.MIN_RADIUS.getValue(generatorInfo);
@@ -287,13 +246,13 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				this.unfinishedPlanets.add(p);
 			}
 		}
-		TimeAnalyzer.end("preGenerate_do");
+		TimeAnalyzer.end();
 	}
 
 	public void generatePlanetoid(int chunkX, int chunkZ, ChunkPrimer primer) {
-		TimeAnalyzer.start("generate");
+		TimeAnalyzer.start("gen");
 
-		TimeAnalyzer.start("finishPlanets");
+		TimeAnalyzer.start("planet");
 		System.out.println("finishing: " + unfinishedPlanets.size() + " planetoids (" + finishedPlanets.size() + " finished)");
 		for (int i = 0; i < this.unfinishedPlanets.size(); i++) {
 			Planet p = (Planet) this.unfinishedPlanets.get(i);
@@ -306,9 +265,9 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				i--;
 			}
 		}
-		TimeAnalyzer.end("finishPlanets");
+		TimeAnalyzer.end();
 
-		TimeAnalyzer.start("generateWater");
+		TimeAnalyzer.start("water");
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 4; y++) {
 				for (int z = 0; z < 16; z++) {
@@ -316,20 +275,16 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				}
 			}
 		}
-		TimeAnalyzer.end("generateWater");
+		TimeAnalyzer.end();
 
-		TimeAnalyzer.end("generate");
+		TimeAnalyzer.end();
 	}
-
-	// @Override -> TODO: not anymore in 1.8 ?!
-	// public Chunk loadChunk(int var1, int var2) {
-	// return this.provideChunk(var1, var2);
-	// }
 
 	@Override
 	// ChunkProviderGenerate
 	public void populate(IChunkProvider provider, int chunkX, int chunkZ) {
-		BlockFalling.fallInstantly = true; // TODO: shouldn't this be off for performance?
+		TimeAnalyzer.start("populate");
+		BlockFalling.fallInstantly = false; // TODO: shouldn't this be off for performance?
 		int k = chunkX * 16;
 		int l = chunkZ * 16;
 		BlockPos blockpos = new BlockPos(k, 0, l);
@@ -421,6 +376,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		MinecraftForge.EVENT_BUS.post(new PopulateChunkEvent.Post(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage));
 
 		BlockFalling.fallInstantly = false;
+		TimeAnalyzer.end();
 	}
 
 	@Override
@@ -499,7 +455,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	}
 
 	@Override
-	// TODO: what's this? - ocean monument func_177460_a
+	// TODO: what's this? - 'ocean monument' func_177460_a
 	public boolean func_177460_a(IChunkProvider p_177460_1_, Chunk p_177460_2_, int p_177460_3_, int p_177460_4_) {
 		boolean flag = false;
 
