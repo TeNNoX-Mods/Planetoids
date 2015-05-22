@@ -174,14 +174,18 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		}
 
 		Chunk chunk = new Chunk(this.world, primer, chunkX, chunkZ);
+
+		TimeAnalyzer.start("biome");
 		byte[] abyte1 = chunk.getBiomeArray();
 
 		for (int k = 0; k < abyte1.length; ++k) {
 			abyte1[k] = (byte) this.biomesForGeneration[k].biomeID;
 		}
-
+		TimeAnalyzer.endStart("biome", "skylight");
 		chunk.generateSkylightMap();
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("skylight");
+
+		TimeAnalyzer.end("provide");
 		return chunk;
 	}
 
@@ -204,7 +208,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		preGenerate2(x + 1, z);
 		preGenerate2(x + 1, z + 1);
 
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("pregen");
 	}
 
 	private void preGenerate2(int x, int z) {
@@ -246,7 +250,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				this.unfinishedPlanets.add(p);
 			}
 		}
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("pregen_do");
 	}
 
 	public void generatePlanetoid(int chunkX, int chunkZ, ChunkPrimer primer) {
@@ -265,9 +269,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				i--;
 			}
 		}
-		TimeAnalyzer.end();
-
-		TimeAnalyzer.start("water");
+		TimeAnalyzer.endStart("planet", "water");
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 4; y++) {
 				for (int z = 0; z < 16; z++) {
@@ -275,9 +277,9 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 				}
 			}
 		}
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("water");
 
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("gen");
 	}
 
 	@Override
@@ -376,7 +378,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 		MinecraftForge.EVENT_BUS.post(new PopulateChunkEvent.Post(provider, world, rand, chunkX, chunkZ, hasGeneratedVillage));
 
 		BlockFalling.fallInstantly = false;
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("populate");
 	}
 
 	@Override

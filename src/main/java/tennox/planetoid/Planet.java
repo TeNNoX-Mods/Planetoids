@@ -145,7 +145,7 @@ public class Planet {
 			this.finishedChunks.add(new Point(chunkX, chunkZ));
 		if (this.unfinishedChunks.contains(new Point(chunkX, chunkZ)))
 			this.unfinishedChunks.remove(new Point(chunkX, chunkZ));
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("p-genchunk");
 	}
 
 	public void decorateChunk(World world, int chunkX, int chunkZ) {
@@ -211,7 +211,7 @@ public class Planet {
 				}
 			}
 		}
-		TimeAnalyzer.end();
+		TimeAnalyzer.end("p-decorate");
 	}
 
 	private void generateSpecial(int x, int y, int z, ChunkPrimer primer) {
