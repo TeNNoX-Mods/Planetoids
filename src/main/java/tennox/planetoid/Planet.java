@@ -1,7 +1,7 @@
 package tennox.planetoid;
 
-import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
 
 import net.minecraft.block.state.IBlockState;
@@ -44,9 +44,11 @@ public class Planet {
 	PlanetType type;
 
 	/** List of not generated Chunks this Plantoid expands to **/
-	ArrayList<Point> unfinishedChunks = new ArrayList<Point>();
+	HashSet<HashPoint> unfinishedChunks = new HashSet<HashPoint>();
 	/** List of finished Chunks this Plantoid expands to **/
-	ArrayList<Point> finishedChunks = new ArrayList<Point>();
+	HashSet<HashPoint> finishedChunks = new HashSet<HashPoint>();
+
+	HashPoint temp = new HashPoint();
 
 	public Planet(PlanetoidChunkProvider provider, World w, int x2, int y2, int z2, int r) {
 		this.chunkprovider = provider;
@@ -141,10 +143,8 @@ public class Planet {
 			}
 		}
 
-		if (!this.finishedChunks.contains(new Point(chunkX, chunkZ)))
-			this.finishedChunks.add(new Point(chunkX, chunkZ));
-		if (this.unfinishedChunks.contains(new Point(chunkX, chunkZ)))
-			this.unfinishedChunks.remove(new Point(chunkX, chunkZ));
+		this.finishedChunks.add(new HashPoint(chunkX, chunkZ));
+		this.unfinishedChunks.remove(new HashPoint(chunkX, chunkZ));
 		TimeAnalyzer.end("p-genchunk");
 	}
 
@@ -226,11 +226,11 @@ public class Planet {
 	}
 
 	public boolean shouldFinishChunk(int cx, int cz) {
-		return this.unfinishedChunks.contains(new Point(cx, cz));
+		return this.unfinishedChunks.contains(temp.set(cx, cz));
 	}
 
 	public boolean shouldDecorateChunk(int cx, int cz) {
-		return this.finishedChunks.contains(new Point(cx, cz));
+		return this.finishedChunks.contains(temp.set(cx, cz));
 	}
 
 	public boolean isAreaClear() {

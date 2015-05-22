@@ -13,8 +13,9 @@ import static net.minecraftforge.event.terraingen.PopulateChunkEvent.Populate.Ev
 import static net.minecraftforge.event.terraingen.PopulateChunkEvent.Populate.EventType.LAKE;
 import static net.minecraftforge.event.terraingen.PopulateChunkEvent.Populate.EventType.LAVA;
 
-import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -55,9 +56,10 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 	private Random rand;
 
-	ArrayList<Planet> finishedPlanets = new ArrayList<Planet>();
-	ArrayList<Planet> unfinishedPlanets = new ArrayList<Planet>();
-	ArrayList<Point> pregen = new ArrayList<Point>();
+	HashSet<Planet> finishedPlanets = new HashSet<Planet>();
+	HashSet<Planet> unfinishedPlanets = new HashSet<Planet>();
+	HashSet<HashPoint> pregen = new HashSet<HashPoint>();
+	HashPoint temp = new HashPoint();
 	int pregenChunkSize = 4;
 
 	private World world;
@@ -212,14 +214,12 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 	}
 
 	private void preGenerate2(int x, int z) {
-		if (!this.pregen.contains(new Point(x, z))) {
+		if (this.pregen.add(new HashPoint(x, z))) {
 			this.rand.setSeed(x * 341873128712L + z * 132897987541L);
 			int x2 = x * this.pregenChunkSize * 16;
 			int z2 = z * this.pregenChunkSize * 16;
 
 			preGenerate_do(x2, z2, x2 + this.pregenChunkSize * 16, z2 + this.pregenChunkSize * 16);
-
-			this.pregen.add(new Point(x, z));
 		}
 	}
 
@@ -242,9 +242,7 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 						int cx = (int) Math.floor(i / 16.0D);
 						int cz = (int) Math.floor(k / 16.0D);
 
-						if (!p.unfinishedChunks.contains(new Point(cx, cz))) {
-							p.unfinishedChunks.add(new Point(cx, cz));
-						}
+						p.unfinishedChunks.add(new HashPoint(cx, cz));
 					}
 				}
 				this.unfinishedPlanets.add(p);
@@ -258,15 +256,14 @@ public class PlanetoidChunkProvider implements IChunkProvider {
 
 		TimeAnalyzer.start("planet");
 		System.out.println("finishing: " + unfinishedPlanets.size() + " planetoids (" + finishedPlanets.size() + " finished)");
-		for (int i = 0; i < this.unfinishedPlanets.size(); i++) {
-			Planet p = (Planet) this.unfinishedPlanets.get(i);
+		Iterator<Planet> iter = unfinishedPlanets.iterator();
+		while (iter.hasNext()) { // TODO: check if this concurrent modification works
+			Planet p = iter.next();
 			if (p.shouldFinishChunk(chunkX, chunkZ))
 				p.generateChunk(chunkX, chunkZ, primer);
 			if (p.isFinished()) {
-				this.unfinishedPlanets.remove(p);
+				iter.remove();
 				this.finishedPlanets.add(p);
-
-				i--;
 			}
 		}
 		TimeAnalyzer.endStart("planet", "water");
